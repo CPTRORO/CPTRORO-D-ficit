@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPT_RORO — Tracker Sèche</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #1DB954;
+  --green-dim: #0f6e30;
+  --green-glow: rgba(29,185,84,0.15);
+  --red: #e24b4a;
+  --red-dim: rgba(226,75,74,0.15);
+  --amber: #EF9F27;
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #1a1a1a;
+  --border: rgba(255,255,255,0.07);
+  --text: #f0f0f0;
+  --muted: #666;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(29,185,84,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,185,84,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container { max-width: 860px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+
+/* Header */
+header {
+  padding: 2.5rem 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.header-inner { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  letter-spacing: 2px;
+  color: var(--green);
+  line-height: 1;
+}
+
+.logo span { color: var(--text); }
+
+.date-display {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.date-display .today { color: var(--green); font-size: 14px; display: block; margin-top: 2px; }
+
+/* Result banner */
+#result-banner {
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: all 0.4s ease;
+  border: 1px solid transparent;
+}
+
+#result-banner.deficit {
+  background: var(--green-glow);
+  border-color: rgba(29,185,84,0.3);
+}
+
+#result-banner.surplus {
+  background: var(--red-dim);
+  border-color: rgba(226,75,74,0.3);
+}
+
+#result-banner.neutral {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.banner-icon { font-size: 2.5rem; flex-shrink: 0; }
+
+.banner-text .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.banner-text .value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.banner-text .message {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.deficit .banner-text .value { color: var(--green); }
+.surplus .banner-text .value { color: var(--red); }
+.neutral .banner-text .value { color: var(--muted); }
+
+/* Summary row */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.summary-card .s-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.summary-card .s-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.summary-card .s-unit {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.summary-card.green .s-value { color: var(--green); }
+.summary-card.red .s-value { color: var(--red); }
+.summary-card.amber .s-value { color: var(--amber); }
+
+/* Section */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 1.5px;
+  color: var(--text);
+}
+
+.section-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green);
+  background: var(--green-glow);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.section-body { padding: 1.5rem; }
+
+/* Food items */
+.food-list { margin-bottom: 1rem; }
+
+.food-item {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.food-item:last-child { border-bottom: none; }
+
+.food-item input, .food-item select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.food-item input:focus {
+  border-color: var(--green);
+}
+
+.food-item input[type="number"] {
+  font-family: var(--font-mono);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover { color: var(--red); }
+
+.add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.add-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Column labels */
+.col-labels {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px 40px;
+  gap: 8px;
+  padding: 0 0 0.5rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+/* Activity items */
+.activity-item {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 90px 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-item input, .activity-item select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.activity-item input:focus, .activity-item select:focus {
+  border-color: var(--green);
+}
+
+.col-labels-act {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 90px 40px;
+  gap: 8px;
+  padding: 0 0 0.5rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+/* Steps section */
+.steps-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.steps-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.big-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 500;
+  padding: 10px 16px;
+  width: 180px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.big-input:focus { border-color: var(--green); }
+
+.steps-info {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.steps-info .si-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.steps-info .si-value { font-family: var(--font-mono); font-size: 18px; color: var(--amber); }
+
+/* Select override */
+select option { background: #1a1a1a; }
+
+/* Footer */
+footer {
+  padding: 2rem 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .summary-row { grid-template-columns: repeat(2, 1fr); }
+  .col-labels, .food-item { grid-template-columns: 1fr 80px 80px 36px; }
+  .col-labels-act, .activity-item { grid-template-columns: 1fr 70px 70px 70px 36px; font-size: 12px; }
+  .logo { font-size: 2rem; }
+  .banner-text .value { font-size: 1.5rem; }
+}
+
+@media (max-width: 480px) {
+  .col-labels-act, .activity-item { grid-template-columns: 1fr 60px 60px 60px 30px; }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.food-item, .activity-item { animation: fadeIn 0.2s ease; }
+
+.pulse { animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo">CPT_<span>RORO</span></div>
+      <div class="date-display">
+        TRACKER SÈCHE ÉTÉ 2025
+        <span class="today" id="today-date"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Result banner -->
+  <div id="result-banner" class="neutral">
+    <div class="banner-icon" id="banner-icon">⚡</div>
+    <div class="banner-text">
+      <div class="label">Bilan du jour</div>
+      <div class="value" id="banner-value">— kcal</div>
+      <div class="message" id="banner-message">Remplis les sections ci-dessous pour voir ton bilan.</div>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-row">
+    <div class="summary-card red">
+      <div class="s-label">Mangé</div>
+      <div class="s-value" id="total-eaten">0</div>
+      <div class="s-unit">kcal ingérées</div>
+    </div>
+    <div class="summary-card green">
+      <div class="s-label">Brûlé (sport)</div>
+      <div class="s-value" id="total-sport">0</div>
+      <div class="s-unit">kcal sport</div>
+    </div>
+    <div class="summary-card amber">
+      <div class="s-label">Brûlé (pas)</div>
+      <div class="s-value" id="total-steps-kcal">0</div>
+      <div class="s-unit">kcal marche</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Métabolisme base</div>
+      <div class="s-value">2 150</div>
+      <div class="s-unit">kcal/jour</div>
+    </div>
+  </div>
+
+  <!-- Food section -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🍽 CE QUE T'AS MANGÉ</div>
+      <div class="section-badge" id="food-badge">0 kcal</div>
+    </div>
+    <div class="section-body">
+      <div class="col-labels">
+        <span>Aliment</span>
+        <span>Quantité (g)</span>
+        <span>Calories</span>
+        <span></span>
+      </div>
+      <div class="food-list" id="food-list"></div>
+      <button class="add-btn" onclick="addFood()">+ Ajouter un aliment</button>
+    </div>
+  </div>
+
+  <!-- Steps section -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">👟 NOMBRE DE PAS</div>
+      <div class="section-badge" id="steps-badge">0 kcal</div>
+    </div>
+    <div class="section-body">
+      <div class="steps-row">
+        <div class="steps-input-wrap">
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Pas aujourd'hui</div>
+            <input type="number" class="big-input" id="steps-input" placeholder="0" min="0" oninput="calculate()">
+          </div>
+        </div>
+        <div class="steps-info">
+          <div class="si-label">Calories brûlées</div>
+          <div class="si-value" id="steps-kcal-display">0 kcal</div>
+        </div>
+        <div class="steps-info">
+          <div class="si-label">Distance estimée</div>
+          <div class="si-value" id="steps-km-display">0 km</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;font-size:12px;color:var(--muted);">Calcul basé sur 100 kg · ~0,04 kcal/pas · 0,75m/pas</div>
+    </div>
+  </div>
+
+  <!-- Sport section -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🏋️ SPORT & ACTIVITÉ</div>
+      <div class="section-badge" id="sport-badge">0 kcal</div>
+    </div>
+    <div class="section-body">
+      <div class="col-labels-act">
+        <span>Activité</span>
+        <span>Durée (min)</span>
+        <span>Intensité</span>
+        <span>Kcal/h</span>
+        <span></span>
+      </div>
+      <div class="activity-list" id="activity-list"></div>
+      <button class="add-btn" onclick="addActivity()">+ Ajouter une activité</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    CPT_RORO — Plan Sèche Été 2025 · Les calculs sont des estimations
+  </div>
+</footer>
+
+<script>
+// Today's date
+const d = new Date();
+document.getElementById('today-date').textContent =
+  d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+
+const BMRBASE = 2150;
+let foodItems = [];
+let activityItems = [];
+
+// ---- FOOD ----
+const presets = [
+  { name: "Blanc de poulet", kcalPer100: 165 },
+  { name: "Thon en boîte", kcalPer100: 116 },
+  { name: "Oeuf entier", kcalPer100: 155 },
+  { name: "Fromage blanc 0%", kcalPer100: 57 },
+  { name: "Steak haché 5%", kcalPer100: 121 },
+  { name: "Saumon", kcalPer100: 208 },
+  { name: "Salade verte", kcalPer100: 15 },
+  { name: "Brocoli", kcalPer100: 34 },
+  { name: "Courgette", kcalPer100: 17 },
+  { name: "Shaker whey (30g)", kcalPer100: 370 },
+  { name: "Autre (manuel)", kcalPer100: null },
+];
+
+function addFood() {
+  const id = Date.now();
+  foodItems.push({ id, name: '', qty: '', kcal: '' });
+  renderFoodList();
+}
+
+function removeFood(id) {
+  foodItems = foodItems.filter(f => f.id !== id);
+  renderFoodList();
+  calculate();
+}
+
+function renderFoodList() {
+  const list = document.getElementById('food-list');
+  list.innerHTML = '';
+  if (foodItems.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Aucun aliment — clique sur + pour ajouter</div>';
+    return;
+  }
+  foodItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'food-item';
+    div.innerHTML = `
+      <select onchange="onFoodPreset(${item.id}, this)">
+        <option value="">-- Choisir ou taper --</option>
+        ${presets.map(p => `<option value="${p.kcalPer100 || ''}" ${item.name===p.name?'selected':''}>${p.name}</option>`).join('')}
+      </select>
+      <input type="number" placeholder="g" min="0" value="${item.qty}" oninput="onFoodQty(${item.id}, this)" />
+      <input type="number" placeholder="kcal" min="0" value="${item.kcal}" oninput="onFoodKcal(${item.id}, this)" />
+      <button class="delete-btn" onclick="removeFood(${item.id})">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function onFoodPreset(id, sel) {
+  const item = foodItems.find(f => f.id === id);
+  if (!item) return;
+  const kcalPer100 = parseFloat(sel.value);
+  item.name = sel.options[sel.selectedIndex].text;
+  item.kcalPer100 = isNaN(kcalPer100) ? null : kcalPer100;
+  if (item.qty && item.kcalPer100) {
+    item.kcal = Math.round(item.kcalPer100 * item.qty / 100);
+  }
+  renderFoodList();
+  calculate();
+}
+
+function onFoodQty(id, inp) {
+  const item = foodItems.find(f => f.id === id);
+  if (!item) return;
+  item.qty = parseFloat(inp.value) || '';
+  if (item.qty && item.kcalPer100) {
+    item.kcal = Math.round(item.kcalPer100 * item.qty / 100);
+    renderFoodList();
+  }
+  calculate();
+}
+
+function onFoodKcal(id, inp) {
+  const item = foodItems.find(f => f.id === id);
+  if (!item) return;
+  item.kcal = parseFloat(inp.value) || '';
+  calculate();
+}
+
+// ---- ACTIVITIES ----
+const actPresets = [
+  { name: "Tapis incliné 10-12%", kcalH: 420 },
+  { name: "Muscu (poids)", kcalH: 350 },
+  { name: "HIIT", kcalH: 600 },
+  { name: "Vélo elliptique", kcalH: 480 },
+  { name: "Natation", kcalH: 500 },
+  { name: "Course à pied", kcalH: 700 },
+  { name: "Randonnée", kcalH: 550 },
+  { name: "Abdos (gainage)", kcalH: 280 },
+  { name: "Autre (manuel)", kcalH: null },
+];
+
+function addActivity() {
+  const id = Date.now();
+  activityItems.push({ id, name: '', duration: '', intensity: 'normal', kcalH: '', kcalTotal: '' });
+  renderActivityList();
+}
+
+function removeActivity(id) {
+  activityItems = activityItems.filter(a => a.id !== id);
+  renderActivityList();
+  calculate();
+}
+
+function renderActivityList() {
+  const list = document.getElementById('activity-list');
+  list.innerHTML = '';
+  if (activityItems.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Aucune activité — clique sur + pour ajouter</div>';
+    return;
+  }
+  activityItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    div.innerHTML = `
+      <select onchange="onActPreset(${item.id}, this)">
+        <option value="">-- Activité --</option>
+        ${actPresets.map(p => `<option value="${p.kcalH || ''}" ${item.name===p.name?'selected':''}>${p.name}</option>`).join('')}
+      </select>
+      <input type="number" placeholder="min" min="0" value="${item.duration}" oninput="onActDuration(${item.id}, this)" />
+      <select onchange="onActIntensity(${item.id}, this)">
+        <option value="0.8" ${item.intensity==='0.8'?'selected':''}>Léger</option>
+        <option value="1" ${item.intensity==='1'||!item.intensity?'selected':''}>Normal</option>
+        <option value="1.25" ${item.intensity==='1.25'?'selected':''}>Intense</option>
+      </select>
+      <input type="number" placeholder="kcal" min="0" value="${item.kcalTotal}" oninput="onActKcal(${item.id}, this)" />
+      <button class="delete-btn" onclick="removeActivity(${item.id})">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function onActPreset(id, sel) {
+  const item = activityItems.find(a => a.id === id);
+  if (!item) return;
+  item.name = sel.options[sel.selectedIndex].text;
+  item.kcalH = parseFloat(sel.value) || null;
+  updateActKcal(item);
+  renderActivityList();
+  calculate();
+}
+
+function onActDuration(id, inp) {
+  const item = activityItems.find(a => a.id === id);
+  if (!item) return;
+  item.duration = parseFloat(inp.value) || '';
+  updateActKcal(item);
+  renderActivityList();
+  calculate();
+}
+
+function onActIntensity(id, sel) {
+  const item = activityItems.find(a => a.id === id);
+  if (!item) return;
+  item.intensity = sel.value;
+  updateActKcal(item);
+  renderActivityList();
+  calculate();
+}
+
+function onActKcal(id, inp) {
+  const item = activityItems.find(a => a.id === id);
+  if (!item) return;
+  item.kcalTotal = parseFloat(inp.value) || '';
+  calculate();
+}
+
+function updateActKcal(item) {
+  if (item.kcalH && item.duration) {
+    const intensity = parseFloat(item.intensity) || 1;
+    item.kcalTotal = Math.round(item.kcalH * (item.duration / 60) * intensity);
+  }
+}
+
+// ---- STEPS ----
+document.getElementById('steps-input').addEventListener('input', calculate);
+
+function stepsToKcal(steps) {
+  return Math.round(steps * 0.04);
+}
+
+function stepsToKm(steps) {
+  return ((steps * 0.75) / 1000).toFixed(1);
+}
+
+// ---- CALCULATE ----
+function calculate() {
+  const steps = parseFloat(document.getElementById('steps-input').value) || 0;
+  const stepsKcal = stepsToKcal(steps);
+  const stepsKm = stepsToKm(steps);
+
+  document.getElementById('steps-kcal-display').textContent = stepsKcal + ' kcal';
+  document.getElementById('steps-km-display').textContent = stepsKm + ' km';
+  document.getElementById('total-steps-kcal').textContent = stepsKcal.toLocaleString('fr-FR');
+  document.getElementById('steps-badge').textContent = stepsKcal + ' kcal';
+
+  const totalEaten = foodItems.reduce((s, f) => s + (parseFloat(f.kcal) || 0), 0);
+  const totalSport = activityItems.reduce((s, a) => s + (parseFloat(a.kcalTotal) || 0), 0);
+  const totalBurned = BMRBASE + stepsKcal + totalSport;
+  const deficit = totalBurned - totalEaten;
+
+  document.getElementById('total-eaten').textContent = Math.round(totalEaten).toLocaleString('fr-FR');
+  document.getElementById('total-sport').textContent = Math.round(totalSport).toLocaleString('fr-FR');
+  document.getElementById('food-badge').textContent = Math.round(totalEaten) + ' kcal';
+  document.getElementById('sport-badge').textContent = Math.round(totalSport) + ' kcal';
+
+  // Banner
+  const banner = document.getElementById('result-banner');
+  const bannerValue = document.getElementById('banner-value');
+  const bannerMessage = document.getElementById('banner-message');
+  const bannerIcon = document.getElementById('banner-icon');
+
+  if (totalEaten === 0 && steps === 0 && totalSport === 0) {
+    banner.className = 'neutral';
+    bannerValue.textContent = '— kcal';
+    bannerMessage.textContent = 'Remplis les sections ci-dessous pour voir ton bilan.';
+    bannerIcon.textContent = '⚡';
+    return;
+  }
+
+  if (deficit >= 500) {
+    banner.className = 'deficit';
+    bannerIcon.textContent = '🔥';
+    bannerValue.textContent = '– ' + Math.round(deficit).toLocaleString('fr-FR') + ' kcal';
+    if (deficit >= 1500) {
+      bannerMessage.textContent = `Excellente journée ! Tu brûles ${Math.round(totalBurned).toLocaleString('fr-FR')} kcal pour ${Math.round(totalEaten).toLocaleString('fr-FR')} kcal ingérées. La sèche avance bien 💪`;
+    } else {
+      bannerMessage.textContent = `Bonne journée en déficit. Tu brûles ${Math.round(totalBurned).toLocaleString('fr-FR')} kcal pour ${Math.round(totalEaten).toLocaleString('fr-FR')} kcal mangées.`;
+    }
+  } else if (deficit > 0) {
+    banner.className = 'deficit';
+    bannerIcon.textContent = '👍';
+    bannerValue.textContent = '– ' + Math.round(deficit).toLocaleString('fr-FR') + ' kcal';
+    bannerMessage.textContent = `Tu es en petit déficit. Essaie d'ajouter 20–30 min de tapis ou de manger un peu moins pour creuser l'écart.`;
+  } else if (deficit > -200) {
+    banner.className = 'neutral';
+    bannerIcon.textContent = '😐';
+    bannerValue.textContent = 'Équilibre';
+    bannerMessage.textContent = `Tu es à l'équilibre — ni déficit ni surplus. Pour progresser, il faut creuser un déficit d'au moins 500 kcal.`;
+  } else {
+    banner.className = 'surplus';
+    bannerIcon.textContent = '⚠️';
+    bannerValue.textContent = '+ ' + Math.round(Math.abs(deficit)).toLocaleString('fr-FR') + ' kcal en trop';
+    bannerMessage.textContent = `Tu as mangé plus que tu n'as brûlé. Pas de panique — une journée ne ruine pas la sèche, mais fais attention demain.`;
+  }
+}
+
+// Init
+renderFoodList();
+renderActivityList();
+calculate();
+</script>
+</body>
+</html>
